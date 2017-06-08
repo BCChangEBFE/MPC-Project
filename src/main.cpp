@@ -72,7 +72,7 @@ int main() {
   MPC mpc;
 
   h.onMessage([&mpc](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length,
-                     uWS::OpCode opCode) {
+  uWS::OpCode opCode) {
     // "42" at the start of the message means there's a websocket message event.
     // The 4 signifies a websocket message
     // The 2 signifies a websocket event
@@ -92,14 +92,55 @@ int main() {
           double psi = j[1]["psi"];
           double v = j[1]["speed"];
 
+          vector<double> way_x;
+          vector<double> way_y;
+          // Transform waypoints in car coordinates
+          for (int i = 0; i < ptsx.size(); i++) {
+            way_x.push_back((ptsx[i] - px)*cos(psi) + (ptsy[i] - py)*sin(psi));
+            way_y.push_back(-(ptsx[i] - px)*sin(psi) + (ptsy[i] - py)*cos(psi));
+
+          }
+
+          // Converting way points to Eigen
+          double * ptrx = &way_x[0];
+          double * ptry = &way_y[0];
+
+          Eigen::Map<Eigen::VectorXd> way_x_eigen(ptrx, way_x.size());
+          Eigen::Map<Eigen::VectorXd> way_y_eigen(ptry, way_y.size());
+
+          auto coeffs = polyfit(way_x_eigen, way_y_eigen, 3);
+
+          double cte = polyeval(coeffs, 0);
+          double epsi = -atan(coeffs[1]);
+
+          Eigen::VectorXd state(6);
+          state << 0, 0, 0, v, cte, epsi;
           /*
           * TODO: Calculate steeering angle and throttle using MPC.
           *
           * Both are in between [-1, 1].
           *
           */
+
+          vector<size_t> startInds = mpc.getStartInds();
+          auto vars = mpc.Solve(state, coeffs);
+
+          size_t x_start = startInds[0];
+          size_t y_start = startInds[1];
+          size_t psi_start = startInds[2];
+          size_t v_start = startInds[3];
+          size_t cte_start = startInds[4];
+          size_t epsi_start = startInds[5];
+          size_t delta_start = startInds[6];
+          size_t a_start = startInds[7];
+
+          size_t N = y_start - x_start;
+
           double steer_value;
           double throttle_value;
+
+          steer_value = -vars[delta_start];
+          throttle_value = vars[a_start];
 
           json msgJson;
           // NOTE: Remember to divide by deg2rad(25) before you send the steering value back.
@@ -107,9 +148,14 @@ int main() {
           msgJson["steering_angle"] = steer_value;
           msgJson["throttle"] = throttle_value;
 
-          //Display the MPC predicted trajectory 
+          //Display the MPC predicted trajectory
           vector<double> mpc_x_vals;
           vector<double> mpc_y_vals;
+
+          for (int i = 1; i < 10; i++) {
+            mpc_x_vals.push_back(vars[x_start + i]);
+            mpc_y_vals.push_back(vars[y_start + i]);
+          }
 
           //.. add (x,y) points to list here, points are in reference to the vehicle's coordinate system
           // the points in the simulator are connected by a Green line
@@ -118,8 +164,8 @@ int main() {
           msgJson["mpc_y"] = mpc_y_vals;
 
           //Display the waypoints/reference line
-          vector<double> next_x_vals;
-          vector<double> next_y_vals;
+          vector<double> next_x_vals = way_x;
+          vector<double> next_y_vals = way_y;
 
           //.. add (x,y) points to list here, points are in reference to the vehicle's coordinate system
           // the points in the simulator are connected by a Yellow line
@@ -139,7 +185,7 @@ int main() {
           //
           // NOTE: REMEMBER TO SET THIS TO 100 MILLISECONDS BEFORE
           // SUBMITTING.
-          this_thread::sleep_for(chrono::milliseconds(100));
+          this_thread::sleep_for(chrono::milliseconds(0));
           ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
         }
       } else {
@@ -153,8 +199,8 @@ int main() {
   // We don't need this since we're not using HTTP but if it's removed the
   // program
   // doesn't compile :-(
-  h.onHttpRequest([](uWS::HttpResponse *res, uWS::HttpRequest req, char *data,
-                     size_t, size_t) {
+  h.onHttpRequest([](uWS::HttpResponse * res, uWS::HttpRequest req, char *data,
+  size_t, size_t) {
     const std::string s = "<h1>Hello world!</h1>";
     if (req.getUrl().valueLength == 1) {
       res->end(s.data(), s.length());
@@ -169,7 +215,7 @@ int main() {
   });
 
   h.onDisconnection([&h](uWS::WebSocket<uWS::SERVER> ws, int code,
-                         char *message, size_t length) {
+  char *message, size_t length) {
     ws.close();
     std::cout << "Disconnected" << std::endl;
   });
