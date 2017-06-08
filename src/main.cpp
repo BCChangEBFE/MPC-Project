@@ -112,7 +112,9 @@ int main() {
 
           double cte = polyeval(coeffs, 0);
           double epsi = -atan(coeffs[1]);
-
+          std::cout << "CTE: " << cte << std::endl;
+          std::cout << "Epsi: " << epsi << std::endl;
+          
           Eigen::VectorXd state(6);
           state << 0, 0, 0, v, cte, epsi;
           /*
@@ -141,6 +143,9 @@ int main() {
 
           steer_value = -vars[0];
           throttle_value = vars[1];
+
+          std::cout << "Steering : " << steer_value << std::endl;
+          std::cout << "Throttle: " << throttle_value << std::endl<<std::endl;
 
           json msgJson;
           // NOTE: Remember to divide by deg2rad(25) before you send the steering value back.
@@ -175,7 +180,7 @@ int main() {
 
 
           auto msg = "42[\"steer\"," + msgJson.dump() + "]";
-          std::cout << msg << std::endl;
+          //std::cout << msg << std::endl;
           // Latency
           // The purpose is to mimic real driving conditions where
           // the car does actuate the commands instantly.
