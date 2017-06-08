@@ -6,8 +6,8 @@
 using CppAD::AD;
 
 // TODO: Set the timestep length and duration
-size_t N = 15;
-double dt = 0.05;
+size_t N = 20;
+double dt = 0.1;
 
 // This value assumes the model presented in the classroom is used.
 //
@@ -56,9 +56,9 @@ class FG_eval {
 
     //
     for (int i = 0; i < N; i++) {
-      fg[0] += 100. * CppAD::pow(vars[cte_start + i] - ref_cte, 2);
-      fg[0] += 1. * CppAD::pow(vars[epsi_start + i] - ref_epsi, 2);
-      fg[0] += 1. * CppAD::pow(vars[v_start + i] - ref_v, 2);
+      fg[0] += 200. * CppAD::pow(vars[cte_start + i] - ref_cte, 2);
+      fg[0] += 200. * CppAD::pow(vars[epsi_start + i] - ref_epsi, 2);
+      fg[0] += .1 * CppAD::pow(vars[v_start + i] - ref_v, 2);
     }
 
     // Minimize the use of actuators.
@@ -68,12 +68,12 @@ class FG_eval {
     }
 
     for (int i = 0; i < N - 2; i++) {
-      fg[0] += 1. * CppAD::pow(vars[delta_start + i + 1] - vars[delta_start + i], 2);
+      fg[0] += 500. * CppAD::pow(vars[delta_start + i + 1] - vars[delta_start + i], 2);
       fg[0] += CppAD::pow(vars[a_start + i + 1] - vars[a_start + i], 2);
     }
 
     // Minimize the value gap between sequential actuations.
-    
+
     // Setup Constraints
     //
     // NOTE: In this section you'll setup the model constraints.
@@ -190,14 +190,14 @@ vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs) {
 
   // Lower and upper limits for all state variables
   for (int i = 0; i < delta_start; i++) {
-    vars_lowerbound[i] = std::numeric_limits<double>::min();
+    vars_lowerbound[i] = -std::numeric_limits<double>::max();
     vars_upperbound[i] = std::numeric_limits<double>::max();
   }
 
   // Lower and upper limits for steering angle and throttle
   for (int i = delta_start; i < a_start; i++) {
-    vars_lowerbound[i] = -.5;
-    vars_upperbound[i] = .50;
+    vars_lowerbound[i] = -1.;
+    vars_upperbound[i] = 1.;
   }
 
   for (int i = a_start; i < n_vars; i++) {
@@ -270,12 +270,12 @@ vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs) {
   // {...} is shorthand for creating a vector, so auto x1 = {1.0,2.0}
   // creates a 2 element double vector.
   vector<double> sol;
-  sol.push_back(solution.x[delta_start]);
-  sol.push_back(solution.x[a_start]);
-  /*
+  //sol.push_back(solution.x[delta_start]);
+  //sol.push_back(solution.x[a_start]);
+
   for (int i = 0; i < n_vars; i++) {
     sol.push_back(solution.x[i]);
   }
-  */
+
   return sol;
 }
