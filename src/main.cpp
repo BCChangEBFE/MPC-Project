@@ -139,8 +139,8 @@ int main() {
           double steer_value;
           double throttle_value;
 
-          steer_value = -vars[delta_start];
-          throttle_value = vars[a_start];
+          steer_value = -vars[0];
+          throttle_value = vars[1];
 
           json msgJson;
           // NOTE: Remember to divide by deg2rad(25) before you send the steering value back.
@@ -151,11 +151,11 @@ int main() {
           //Display the MPC predicted trajectory
           vector<double> mpc_x_vals;
           vector<double> mpc_y_vals;
-
+          /*
           for (int i = 1; i < 10; i++) {
             mpc_x_vals.push_back(vars[x_start + i]);
             mpc_y_vals.push_back(vars[y_start + i]);
-          }
+          }*/
 
           //.. add (x,y) points to list here, points are in reference to the vehicle's coordinate system
           // the points in the simulator are connected by a Green line
