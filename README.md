@@ -7,7 +7,7 @@ The controller used a kinetic model to describe the state nad actuation of the c
 
 The state equations are provided in MPC.cpp and are the following:
 
-'''C++
+```C++
 
 fg[2 + x_start + i] = x1 - (x0 + v0 * CppAD::cos(psi0) * dt);
 fg[2 + y_start + i] = y1 - (y0 + v0 * CppAD::sin(psi0) * dt);
@@ -16,7 +16,7 @@ fg[2 + v_start + i] = v1 - (v0 + a0 * dt);
 fg[2 + cte_start + i] = cte1 - ((f0 - y0) + (v0 * CppAD::sin(epsi0) * dt));
 fg[2 + epsi_start + i] = epsi1 - ((psi0 - psides0) + v0 * delta0 / Lf * dt);
 
-'''
+```
 
 ## Receding Horizon
 
@@ -30,7 +30,7 @@ The simulator sends way points and state of the car to the controller, to be use
 
 The way points sent by the simulator are in the global coordinate system. The following equations in main.cpp were used to convert them to car's coordinates.
 
-'''C++
+```C++
 
 for (int i = 0; i < ptsx.size(); i++) {
   way_x.push_back((ptsx[i] - px)*cos(psi) + (ptsy[i] - py)*sin(psi));
@@ -38,7 +38,7 @@ for (int i = 0; i < ptsx.size(); i++) {
 
 }
 
-'''
+```
 
 ---
 
