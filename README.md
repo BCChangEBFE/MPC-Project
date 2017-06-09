@@ -1,5 +1,41 @@
-# CarND-Controls-MPC
-Self-Driving Car Engineer Nanodegree Program
+# Model Predictive Control of Steering Angle and Throttle
+This is a solution to the Udacity Car-ND MPc project. The starter code provided at the following link was used:
+https://github.com/udacity/CarND-MPC-Project
+
+## Model 
+The controller used a kinetic model to describe the state nad actuation of the car. The state of the car was determined by its x, y position, orientaiton, velocity, crosstrack error, and orientation error. The steering angle and throttle of the car was predicted using these state variables.
+
+The state equations are provided in MPC.cpp and are the following:
+
+'''C++
+fg[2 + x_start + i] = x1 - (x0 + v0 * CppAD::cos(psi0) * dt);
+fg[2 + y_start + i] = y1 - (y0 + v0 * CppAD::sin(psi0) * dt);
+fg[2 + psi_start + i] = psi1 - (psi0 + v0 * delta0 / Lf * dt);
+fg[2 + v_start + i] = v1 - (v0 + a0 * dt);
+fg[2 + cte_start + i] = cte1 - ((f0 - y0) + (v0 * CppAD::sin(epsi0) * dt));
+fg[2 + epsi_start + i] = epsi1 - ((psi0 - psides0) + v0 * delta0 / Lf * dt);
+
+'''
+
+## Receding Horizon
+
+The MPC is used to predict the state of the system in the following "N" steps based on the current state. The first step of actuation is performed and the predition is carried out again for the next "N" steps. Thus the horizon of the controller is changing. After trying different combination of number of steps (N) and time differnece between states (dt), I settled on N = 20 and dt = 0.1s. 
+
+My target was to get the car to a maximum of 60mph and these values provided a good balance. At that speed 2sec horizon was useful in fitting the way points around a curved section of the track an optimal amount of time before the car had to actually turn. I tried smaller dt values and found the car behaving erractily at curves and then seinging from one end of the track to another.
+
+## Polynomial fitting and Preprocessing
+
+The simulator sends way points and state of the car to the controller, to be used for prediction. The way points can be used to calculate the coefficients of the polynomial for the path the car needs to follow. As the cross track and heading errors are not provided by the simulator, they need to be computed. These errors are much easier to calculate if the equation of the path is in car's local coordinate system, with the x-axis in the direction of car's heading and y-axis to the left of it. 
+
+The way points sent by the simulator are in the global coordinate system. The following equations in main.cpp were used to convert them to car's coordinates.
+
+'''C++
+for (int i = 0; i < ptsx.size(); i++) {
+  way_x.push_back((ptsx[i] - px)*cos(psi) + (ptsy[i] - py)*sin(psi));
+  way_y.push_back(-(ptsx[i] - px)*sin(psi) + (ptsy[i] - py)*cos(psi));
+
+}
+'''
 
 ---
 
