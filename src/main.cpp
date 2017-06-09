@@ -95,6 +95,7 @@ int main() {
 
           vector<double> way_x;
           vector<double> way_y;
+
           // Transform waypoints in car coordinates
           for (int i = 0; i < ptsx.size(); i++) {
             way_x.push_back((ptsx[i] - px)*cos(psi) + (ptsy[i] - py)*sin(psi));
@@ -111,16 +112,18 @@ int main() {
 
           auto coeffs = polyfit(way_x_eigen, way_y_eigen, 3);
 
-          // Predict state after latency
+          // Predict state after latency before passing to the solver
           double dt = 0.1;
-          px = v*dt;
-          psi = -v*steer_angle*dt/2.67;
+          px = v * dt;
+          psi = -v * steer_angle * dt / 2.67;
 
           double cte = polyeval(coeffs, px);
-          double epsi = -atan(coeffs[1] + 2*px*coeffs[2] + 3*px*px*coeffs[2]);
+          double epsi = -atan(coeffs[1] + 2 * px * coeffs[2] + 3 * px * px * coeffs[2]);
+
           std::cout << "CTE: " << cte << std::endl;
           std::cout << "Epsi: " << epsi << std::endl;
-          
+
+          // State to initialize the solver
           Eigen::VectorXd state(6);
           state << px, 0.0, psi, v, cte, epsi;
           /*
@@ -129,8 +132,10 @@ int main() {
           * Both are in between [-1, 1].
           *
           */
-
+          // Getting starting indices of state and actuators
           vector<size_t> startInds = mpc.getStartInds();
+
+          // Solving
           auto vars = mpc.Solve(state, coeffs);
 
           size_t x_start = startInds[0];
@@ -151,7 +156,7 @@ int main() {
           throttle_value = vars[a_start];
 
           std::cout << "Steering : " << steer_value << std::endl;
-          std::cout << "Throttle: " << throttle_value << std::endl<<std::endl;
+          std::cout << "Throttle: " << throttle_value << std::endl << std::endl;
 
           json msgJson;
           // NOTE: Remember to divide by deg2rad(25) before you send the steering value back.
@@ -160,6 +165,7 @@ int main() {
           msgJson["throttle"] = throttle_value;
 
           //Display the MPC predicted trajectory
+          // Used only while debugigng turned off in final build
           vector<double> mpc_x_vals;
           vector<double> mpc_y_vals;
           /*
@@ -168,6 +174,7 @@ int main() {
             mpc_y_vals.push_back(vars[y_start + i]);
           }
           */
+
           //.. add (x,y) points to list here, points are in reference to the vehicle's coordinate system
           // the points in the simulator are connected by a Green line
 
@@ -175,8 +182,9 @@ int main() {
           msgJson["mpc_y"] = mpc_y_vals;
 
           //Display the waypoints/reference line
-          vector<double> next_x_vals;// = way_x;
-          vector<double> next_y_vals;// = way_y;
+          // Used only while debugigng turned off in final build
+          vector<double> next_x_vals; // = way_x;
+          vector<double> next_y_vals; // = way_y;
 
           //.. add (x,y) points to list here, points are in reference to the vehicle's coordinate system
           // the points in the simulator are connected by a Yellow line
