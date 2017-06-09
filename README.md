@@ -105,7 +105,6 @@ state << px, 0.0, psi, v, cte, epsi;
 ## Results
 
 This implementation was able to smoothly run the car around the track achieving max speed close to 60mph. The model accelerated on straight sections of the track and braked on sharp turns to slow the car down. 
----
 
 ## Dependencies
 
