@@ -1,8 +1,8 @@
-# CarND-Controls-MPC
-Self-Driving Car Engineer Nanodegree Program
+# Model Predictive Control of Car Steering Angle and Throttle
+This is a solution for the Udacity Card-ND MPC project. It uses the started code 
+provided at https://github.com/udacity/CarND-MPC-Project
 
----
-
+--
 ## Dependencies
 
 * cmake >= 3.5
