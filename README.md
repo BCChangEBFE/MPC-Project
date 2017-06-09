@@ -3,7 +3,7 @@ This is a solution to the Udacity Car-ND MPc project. The starter code provided 
 https://github.com/udacity/CarND-MPC-Project
 
 ## Model 
-The controller used a kinetic model to describe the state nad actuation of the car. The state of the car was determined by its x, y position, orientaiton, velocity, crosstrack error, and orientation error. The steering angle and throttle of the car was predicted using these state variables.
+The controller used a kinetic model to describe the state nad actuation of the car. The state of the car was determined by its x, y position, orientaiton, velocity, crosstrack error, and orientation error. The steering angle and throttle of the car was predicted using these state variables. The model used for the project was very similar to the one provided in the solution for the mpc quiz, except for certain specifics described in the subsection below.
 
 The state equations are provided in MPC.cpp and are the following:
 
@@ -16,6 +16,42 @@ fg[2 + v_start + i] = v1 - (v0 + a0 * dt);
 fg[2 + cte_start + i] = cte1 - ((f0 - y0) + (v0 * CppAD::sin(epsi0) * dt));
 fg[2 + epsi_start + i] = epsi1 - ((psi0 - psides0) + v0 * delta0 / Lf * dt);
 
+```
+
+### Tuning the Model specifics
+The contraints on the model were kept the same as the ones in the quiz solution. The one change that was made was that the steering angle was contrained between -1 and 1, instead of -deg2Rads(25) and deg2Rads(25). By doing so, no conversion was needed while passing values to the simulator.
+
+The objective function for the model was tuned ot obtian optimal results. This function had three parts:
+
+1. **State Cost**: This incorporated cost of changes in crosstrack error (cte), heading error and speed error. The three costs were weighted differently to assing relative importace. The main goal of the model is to drive at the center of the track. For that reason a high weight of 200 was used with cte and heading cost. The speed error cost term was used to not have the vehicle stop if it was perfectly centered. However, reaching and staying at maximum speed was not that important. Therefor a low cost of 0.1 was used.
+
+2. **Actuation cost**: This pasrt was used to minimize the use of actuation.
+
+3. **Cost of changing actuation**: To prevent the car from suddently acelerating and changing the steering angle abruptly, the cost dependent on changes in actuation was added. A high weight of 500 was used for steering angle change to force the car to make smoother turns and prevent it from swinging on the track.  
+
+The following code implementing the above costs is in MPC.cpp:
+
+```C++
+fg[0] = 0;
+
+// Reference State Cost
+for (int i = 0; i < N; i++) {
+  fg[0] += 200. * CppAD::pow(vars[cte_start + i] - ref_cte, 2);
+  fg[0] += 200. * CppAD::pow(vars[epsi_start + i] - ref_epsi, 2);
+  fg[0] += .1 * CppAD::pow(vars[v_start + i] - ref_v, 2);
+}
+
+// Minimize the use of actuators.
+for (int i = 0; i < N - 1; i++) {
+  fg[0] += CppAD::pow(vars[delta_start + i], 2);
+  fg[0] += CppAD::pow(vars[a_start + i], 2);
+}
+
+// Minimize the value gap between sequential actuations.
+for (int i = 0; i < N - 2; i++) {
+  fg[0] += 500. * CppAD::pow(vars[delta_start + i + 1] - vars[delta_start + i], 2);
+  fg[0] += CppAD::pow(vars[a_start + i + 1] - vars[a_start + i], 2);
+}
 ```
 
 ## Receding Horizon
@@ -40,6 +76,34 @@ for (int i = 0; i < ptsx.size(); i++) {
 
 ```
 
+Once the way points were converted to local coordinates, a third degree polynomial fit was calculated.
+
+## Latency
+
+The controller had to account for the latency in the car's system as observed in real world. In real world scenario, changes in actuation (steering angle and throttle) take a certain amount of time to take effect. This results in actuation intended to apply at the current time to be appiled after a certain delay. This is the latency in the system. Humans are very efficient in learning is latency and incorporate in their control without specifically having to think about it at each step. A computer based controller is naive to such situations. In this project a 100ms latency had to be accounted for. 
+
+To accomplish this, I again went back to the kinetic model and used it to predict the state of the car after the latency period. This predicted state was then used as an inout to the solver. The solver was thus able to precit the actuation after the latency period. This actuation was passed to the simulator. The calculation of state after latency is in the following piece of code in main.cpp:
+
+```C++
+// Predict state after latency before passing to the solver
+double dt = 0.1;
+px = v * dt;
+psi = -v * steer_angle * dt / 2.67;
+
+double cte = polyeval(coeffs, px);
+double epsi = -atan(coeffs[1] + 2 * px * coeffs[2] + 3 * px * px * coeffs[2]);
+
+std::cout << "CTE: " << cte << std::endl;
+std::cout << "Epsi: " << epsi << std::endl;
+
+// State to initialize the solver
+Eigen::VectorXd state(6);
+state << px, 0.0, psi, v, cte, epsi;
+
+```
+
+## Results
+This implementation was able to smoothly run the car around the track achieving max speed close to 60mph. The model accelerated on straight sections of the track and braked on sharp turns to slow the car down.  
 ---
 
 ## Dependencies
