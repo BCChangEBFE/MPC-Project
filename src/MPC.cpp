@@ -23,7 +23,7 @@ const double Lf = 2.67;
 
 const double ref_cte = 0;
 const double ref_epsi = 0;
-const double ref_v = 40.;
+const double ref_v = 60.;
 // Starting index for each variable
 
 size_t x_start = 0;
@@ -67,12 +67,14 @@ class FG_eval {
       fg[0] += CppAD::pow(vars[a_start + i], 2);
     }
 
+    // Minimize the value gap between sequential actuations.
+
     for (int i = 0; i < N - 2; i++) {
       fg[0] += 500. * CppAD::pow(vars[delta_start + i + 1] - vars[delta_start + i], 2);
       fg[0] += CppAD::pow(vars[a_start + i + 1] - vars[a_start + i], 2);
     }
 
-    // Minimize the value gap between sequential actuations.
+    
 
     // Setup Constraints
     //
