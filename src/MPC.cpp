@@ -126,6 +126,7 @@ class FG_eval {
 MPC::MPC() {}
 MPC::~MPC() {}
 
+// Fuction to return starting indexes of all variables 
 vector<size_t> MPC::getStartInds() {
   vector<size_t> startInds = {x_start, y_start, psi_start, v_start, cte_start,
                               epsi_start, delta_start, a_start
